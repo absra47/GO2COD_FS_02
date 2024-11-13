@@ -49,23 +49,91 @@ export const signup = async (req, res) => {
     setCookies(res, accessToken, refreshToken);
 
     return res.status(201).json({
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      message: "User created successfully",
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
     });
   } catch (error) {
+    console.log("Error in signup controller", error.message);
     res.status(500).json({ message: error.message });
   }
 };
 
 export const login = async (req, res) => {
-  res.send("login router called");
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (user && (await user.comparePassword(password))) {
+      const { accessToken, refreshToken } = generateTokens(user._id);
+      await storeRefreshToken(user._id, refreshToken);
+      setCookies(res, accessToken, refreshToken);
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
+    } else {
+      res.status(401).json({ message: "Invalid credentials" });
+    }
+  } catch (error) {
+    console.log("Error in logging controller", error.message);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const logout = async (req, res) => {
-  res.send("logout router called");
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (refreshToken) {
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+      await redis.del(`refresh_token:${decoded.userId}`);
+    }
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    console.log("Error in logout controller", error.message);
+    res.status(500).json({ message: "server error", error: error.message });
+  }
 };
+
+export const refeshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ message: "No refresh token Provided" });
+    }
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const storedRefreshToken = await redis.get(
+      `refresh_token:${decoded.userId}`
+    );
+    if (refreshToken !== storedRefreshToken) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+    const accessToken = jwt.sign(
+      { userId: decoded.userId },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+        expiresIn: "15m",
+      }
+    );
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true, //prevents xss attacks cross site scripting(XSS)
+      secure: process.env.NODE_ENV === "production",
+      samesite: "strict", //prevents csrf attacks cross site request forgery
+      maxAge: 15 * 60 * 1000,
+    });
+    res.json({ message: "Token refreshed successfully" });
+  } catch (error) {
+    console.log("Error in refeshToken controller", error.message);
+    res.status(500).json({ message: "server error", error: error.message });
+  }
+};
+//TODO:implement getProfile later
+// export const getProfile = async (req, res) => {};
