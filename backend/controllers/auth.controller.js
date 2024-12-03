@@ -135,5 +135,11 @@ export const refeshToken = async (req, res) => {
     res.status(500).json({ message: "server error", error: error.message });
   }
 };
-//TODO:implement getProfile later
-// export const getProfile = async (req, res) => {};
+
+export const getProfile = async (req, res) => {
+  try {
+    res.json(req.user);
+  } catch (error) {
+    res.status(500).json({ message: "server error", error: error.message });
+  }
+};
