@@ -1,5 +1,5 @@
 {
-  "name": "go2cod_fs_02",
+  "name": "E-Commerce_Store",
   "version": "1.0.0",
   "description": "E-Commerce Store and Admin Dashboard - React.js, Stripe, Node.js, Redis",
   "main": "/backend/server.js",
@@ -29,7 +29,7 @@
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.28.0",
     "recharts": "^2.14.1",
-    "stripe": "^17.3.1",
+    "stripe": "^17.7.0",
     "zustand": "^5.0.1"
   },
   "devDependencies": {

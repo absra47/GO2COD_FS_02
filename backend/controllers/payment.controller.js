@@ -1,16 +1,16 @@
 import Coupon from "../models/coupon.model.js";
 import Order from "../models/order.model.js";
-// import { stripe } from "../lib/stripe.js";
+import { stripe } from "../lib/stripe.js";
 export const createCheckoutSession = async (req, res) => {
   try {
-    const { product, coupons } = req.body;
-    if (!Array.isArray(product || product.length === 0)) {
+    const { products, couponCode } = req.body;
+    if (!Array.isArray(products || products.length === 0)) {
       return res
         .status(400)
-        .json({ message: "Invalid or empty product array" });
+        .json({ message: "Invalid or empty products array" });
     }
     let totalAmount = 0;
-    const lineItems = product.map((product) => {
+    const lineItems = products.map((product) => {
       const amount = Math.round(product.price * 100); //stripe wants you to send in the format of cents
       totalAmount += amount * product.quantity;
       return {
@@ -40,7 +40,7 @@ export const createCheckoutSession = async (req, res) => {
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      sussess_url: `${process.env.CLIENT_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.CLIENT_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/Purchase-cancel`,
       discounts: coupon
         ? [
@@ -58,7 +58,13 @@ export const createCheckoutSession = async (req, res) => {
       await createNewCoupon(req.user._id);
     }
     res.json({ id: session.id, totalAmount: totalAmount / 100 });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error in createCheckoutSession:", error);
+    res.status(500).json({
+      message: "Failed to create checkout session",
+      error: error.message,
+    });
+  }
 };
 export const checkoutSuccess = async (req, res) => {
   try {
@@ -115,7 +121,7 @@ async function createStripeCoupon(discountPercentage) {
   });
   return coupon.id;
 }
-async function createNewCoupon() {
+async function createNewCoupon(userId) {
   const newCoupon = new Coupon({
     code:
       "GIFT" +
