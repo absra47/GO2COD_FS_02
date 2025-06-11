@@ -56,6 +56,10 @@ function App() {
             path="/cart"
             element={user ? <CartPage /> : <Navigate to="/login" />}
           />
+          {/* <Route
+            path="/cart"
+            element={user ? <CartPage /> : <Navigate to="/login" />}
+          /> */}
         </Routes>
       </div>
       <Toaster />
