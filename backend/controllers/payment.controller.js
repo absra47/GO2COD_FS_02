@@ -1,6 +1,6 @@
 import Coupon from "../models/coupon.model.js";
 import Order from "../models/order.model.js";
-import { stripe } from "../lib/stripe.js";
+// import { stripe } from "../lib/stripe.js";
 export const createCheckoutSession = async (req, res) => {
   try {
     const { product, coupons } = req.body;
@@ -22,6 +22,7 @@ export const createCheckoutSession = async (req, res) => {
           },
           unit_amount: amount,
         },
+        quantity: product.quantity || 1,
       };
     });
     let coupon = null;
@@ -59,7 +60,6 @@ export const createCheckoutSession = async (req, res) => {
     res.json({ id: session.id, totalAmount: totalAmount / 100 });
   } catch (error) {}
 };
-
 export const checkoutSuccess = async (req, res) => {
   try {
     const { sessionId } = req.body;

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -39,4 +40,15 @@ if (process.env.NODE_ENV === "production") {
 app.listen(PORT, () => {
   console.log("Server is running on http://localhost:" + PORT);
   connectDB();
+});
+
+app.get("/api/redis-test", async (req, res) => {
+  try {
+    await redisClient.set("exampleKey", "Hello from Redis!");
+    const value = await redisClient.get("exampleKey");
+    res.json({ message: "Redis Test Successful!", data: value });
+  } catch (error) {
+    console.error("Error in /api/redis-test:", error);
+    res.status(500).json({ message: "Failed to interact with Redis." });
+  }
 });
