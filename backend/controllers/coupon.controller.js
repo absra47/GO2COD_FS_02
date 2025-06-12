@@ -9,7 +9,7 @@ export const getCoupon = async (req, res) => {
     res.json(coupon || null);
   } catch (error) {
     console.log("Error in getCoupon controller", error.message);
-    res.status(500).json({ message: "server error", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 export const validteCoupon = async (req, res) => {
@@ -20,15 +20,17 @@ export const validteCoupon = async (req, res) => {
       userId: req.user._id,
       isActive: true,
     });
+
     if (!coupon) {
-      res.status(404).json({ message: "Coupon not found" });
-      s;
+      return res.status(404).json({ message: "Coupon not found" });
     }
-    if (coupon.expiryDate < new Date()) {
+
+    if (coupon.expirationDate < new Date()) {
       coupon.isActive = false;
       await coupon.save();
-      res.status(404).json({ message: "Coupon is expired" });
+      return res.status(404).json({ message: "Coupon expired" });
     }
+
     res.json({
       message: "Coupon is valid",
       code: coupon.code,

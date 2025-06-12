@@ -18,13 +18,11 @@ const GiftCouponCard = () => {
   const handleApplyCoupon = () => {
     if (!userInputCode) return;
     applyCoupon(userInputCode);
-    console.log(userInputCode);
   };
 
   const handleRemoveCoupon = async () => {
     await removeCoupon();
     setUserInputCode("");
-    console.log("remove  coupon");
   };
 
   return (
