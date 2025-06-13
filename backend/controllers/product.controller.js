@@ -13,22 +13,40 @@ export const getAllProducts = async (req, res) => {
 
 export const getFeaturedProducts = async (req, res) => {
   try {
-    const featuredProducts = await redis.get("featured_products");
-    if (featuredProducts) {
-      return res.json({ products: JSON.parse(featuredProducts) });
+    // Attempt to get from Redis cache first
+    const cachedProducts = await redis.get("featured_products"); // Use a distinct variable name
+    if (cachedProducts) {
+      console.log("Fetching featured products from Redis cache.");
+      // Ensure the response structure is { products: [...] }
+      return res.json({ products: JSON.parse(cachedProducts) });
     }
-    //if it is not in redis , fetch from mongodb
-    //lean() goona return a plain javascript object insted of mongo db object good for performance
-    const products = await Product.find({ isFeatured: true }).lean();
-    if (!featuredProducts) {
-      return res.status(404).json({ message: "No featured Products  found" });
-    }
-    //store in redis for future quick access
-    await redis.set("featured_products", JSON.stringify(featuredProducts));
-    res.json({ featuredProducts });
-  } catch (error) {}
-};
 
+    // If not in Redis, fetch from MongoDB
+    console.log("Fetching featured products from MongoDB.");
+    const productsFromDb = await Product.find({ isFeatured: true }).lean();
+
+    // Check if any featured products were found in MongoDB
+    if (!productsFromDb || productsFromDb.length === 0) {
+      console.log("No featured products found in MongoDB. Returning 404.");
+      return res.status(404).json({ message: "No featured products found" });
+    }
+
+    // Store the fetched products in Redis for future quick access
+    await redis.set("featured_products", JSON.stringify(productsFromDb));
+    console.log("Featured products fetched from DB and cached in Redis.");
+
+    // Send the products to the frontend in the expected format
+    res.json({ products: productsFromDb });
+  } catch (error) {
+    console.error("Error in getFeaturedProducts controller:", error); // Log the actual error
+    res
+      .status(500)
+      .json({
+        message: "Failed to fetch featured products",
+        error: error.message,
+      });
+  }
+};
 export const createProduct = async (req, res) => {
   try {
     const { name, description, price, image, category } = req.body;
